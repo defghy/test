@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="expires" content="0">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="format-detection" content="address=no">
+    <title>tt</title>
+    <style type="text/css">
+      ul {
+        width: 100%; height: 300px; position: relative;
+        background: #fff;
+        overflow-y: auto;
+        margin: 0;
+      }
+      ul li {
+        width: 100%; height: 50px;
+      }
+      .up, .down {
+        background: #0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div style='position: relative; height: 300px;'>
+      <div class="up">下拉刷新</div>
+      <ul class="container">
+        <li>123</li>
+        <li>abc</li>
+        <li>456</li>
+        <li>789</li>
+        <li>1012</li>
+        <li>11</li>
+        <li>12</li>
+        <li>13</li>
+        <li>14</li>
+        <li>15</li>
+        <li>16</li>
+        <li>17</li>
+        <li>18</li>
+        <li>19</li>
+        <li>20</li>
+        <li>21</li>
+        <li>22</li>
+        <li>23</li>
+        <li>24</li>
+        <li>25</li>
+      </ul>
+      <div class="down">上拉翻页</div>
+    </div>
+<!-- 成功后才调用微信服务器端接口-->
+<script type="text/javascript">
+class ScrollUtil {
+  constructor(opt) {
+    this.domList = opt.domList;
+    this.domUp = opt.domUp; // 下拉
+    this.domDown = opt.domDown; // 上拉
+
+    this.listeners = Object.assign({
+      topSlideDown: opt.onTopDragDown,
+      bottomSlideUp: opt.onBottomDragUp
+    });
+
+    this.pos = 'TOP';
+    this.upDownHeight = this.domUp.offsetHeight;
+
+    this.onScroll = this.onScroll.bind(this);
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.onTouchEnd = this.onTouchEnd.bind(this);
+    this.onTouchMove = this.onTouchMove.bind(this);
+
+    this.init();
+  }
+
+  init() {
+    this.domUp.style.position = this.domDown.style.position = this.domList.style.position = 'absolute';
+    this.domUp.style.top = this.domDown.style.bottom = '0';
+    this.domUp.style.zIndex = this.domDown.style.zIndex = '0';
+    this.domList.style.zIndex = '1';
+
+    this.domList.addEventListener('scroll', this.onScroll);
+    this.domList.addEventListener('touchstart', this.onTouchStart);
+    this.domList.addEventListener('touchmove', this.onTouchMove);
+    this.domList.addEventListener('touchend', this.onTouchEnd);
+  }
+
+  onScroll(evt) {
+    let scrollTop = evt.target.scrollTop;
+    this.pos = 'MIDDLE';
+
+    if(scrollTop == 0) {
+      this.pos = 'TOP';
+    }
+    if(scrollTop+ evt.target.offsetHeight >= evt.target.scrollHeight) {
+      console.log(`${scrollTop}, ${evt.target.offsetHeight}, ${evt.target.scrollHeight}`);
+      this.pos = 'BOTTOM';
+    }
+    console.log(this.pos);
+  }
+
+  onTouchStart(evt) {
+    if(this.pos == 'MIDDLE') {
+      return;
+    }
+
+    this.posY = evt.touches[0].clientY;
+  }
+
+  onTouchMove(evt) {
+    if(this.pos == 'MIDDLE') {
+      return;
+    }
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    this.deltaY = evt.touches[0].clientY - this.posY;
+    this.posTouch = this.deltaY > 0? 'DOWN': 'UP';
+
+    // 恢复滑动
+    var isDrag = !((this.pos == 'TOP' && this.posTouch == 'UP') ||
+      (this.pos == 'BOTTOM' && this.posTouch == 'DOWN'));
+    if(!isDrag) {
+      if(this.pos == 'TOP' && this.posTouch == 'UP') {
+        this.domList.scrollTop = this.domList.scrollTop + 1;
+        return;
+      }
+      if(this.pos == 'BOTTOM' && this.posTouch == 'DOWN') {
+        this.domList.scrollTop = this.domList.scrollTop -1;
+        return;
+      }
+    }
+
+    // 上拉下拉
+    var dom = this.domList;
+    dom.style.transition = '';
+    // 拖拽降低灵敏性，防止误拖拽刷新
+    let diffY = Math.floor(this.deltaY / 3);
+    if(this.pos == 'TOP') {
+      dom.style.transform = `translate3d(0, ${Math.max(diffY, 0)}px, 0)`;
+    }
+    if(this.pos == 'BOTTOM') {
+      dom.style.transform = `translate3d(0, ${Math.min(diffY, 0)}px, 0)`;
+    }
+
+    return;
+
+  }
+
+  onTouchEnd(evt) {
+    if(this.pos == 'MIDDLE') {
+      return;
+    }
+    var dom = this.domList;
+    dom.style.transition = 'transform 300ms';
+
+    // 拉动距离过小，不操作
+    var safeDistence = this.domUp.offsetHeight;
+
+    if(Math.abs(this.deltaY)<safeDistence) {
+      dom.style.transform = `translate3d(0, 0, 0)`;
+      return;
+    }
+
+    dom.style.transform = `translate3d(0, ${{'TOP': 1, 'BOTTOM': -1}[this.pos]*safeDistence}px, 0)`;
+
+    let def = function() {
+      return new Promise(function(resolve) {
+        setTimeout(resolve, 2000);
+      });
+    };
+    let cb = (this.pos == 'TOP'? this.listeners['topSlideDown']:
+      this.pos == 'BOTTOM'? this.listeners['bottomSlideUp']: def) || def;
+
+    return cb().then(() => {
+      dom.style.transform = `translate3d(0, 0, 0)`;
+    });
+  }
+
+};
+
+var me = new ScrollUtil({
+  domList: document.querySelector('ul'),
+  domUp: document.querySelector('.up'),
+  domDown: document.querySelector('.down')
+});
+</script>
+</body>
+</html>
