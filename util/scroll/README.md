@@ -8,7 +8,7 @@ new ScrollUtil({
   domUp: document.querySelector('.up'),     // top item
   domDown: document.querySelector('.down'),  // down item
 
-  onTopDragDown: () => {}  // callback
+  onTopDragDown: () => {},  // callback
   onBottomDragUp: () => {}
 });
 ```
