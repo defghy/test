@@ -140,7 +140,7 @@ class ScrollUtil {
     var dom = this.domList;
     dom.style.transition = '';
     // 拖拽降低灵敏性，防止误拖拽刷新
-    let diffY = Math.floor(this.deltaY / 3);
+    let diffY = Math.floor(this.deltaY / 5);
     if(this.pos == 'TOP') {
       dom.style.transform = `translate3d(0, ${Math.max(diffY, 0)}px, 0)`;
     }
